@@ -78,6 +78,7 @@ attrs = [
     'pickup_latitude',
     'dropoff_longitude',
     'dropoff_latitude',
+    'distance',
 ]
 
 pipeline = Pipeline([
