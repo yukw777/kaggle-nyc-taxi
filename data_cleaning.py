@@ -1,5 +1,9 @@
 import numpy as np
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
+
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 class DataFrameSelector(BaseEstimator, TransformerMixin):
 
@@ -12,24 +16,73 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
     def transform(self, X):
         return X[self.attribute_names].values
 
-class DistanceAdder(BaseEstimator, TransformerMixin):
+class DateTimeToTimeStampTransformer(BaseEstimator, TransformerMixin):
 
-    PICKUP_LONG_COL = 0
-    PICKUP_LAT_COL = 1
-    DROPOFF_LONG_COL = 2
-    DROPOFF_LAT_COL = 3
-
-    def __init__(self, add_distance=False):
-        self.add_distance = add_distance
+    def __init__(self, time_attrs):
+        self.time_attrs = time_attrs
+        self.helper = np.vectorize(lambda t: t.timestamp())
 
     def fit(self, X, y=None):
         return self
 
     def transform(self, X):
-        if self.add_distance:
-            x_diff = X[:, DROPOFF_LAT_COL] - X[:, PICKUP_LAT_COL]
-            y_diff = X[:, DROPOFF_LONG_COL] - X[:, PICKUP_LONG_COL]
-            distance = np.sqrt(np.square(x_diff) + np.square(y_diff))
+        for attr in self.time_attrs:
+            X[attr] = self.helper(X[attr].dt.to_pydatetime())
 
-            return np.c_[X, distance]
         return X
+
+class DistanceAdder(BaseEstimator, TransformerMixin):
+
+    EARTH_RADIUS = 6371     # Earth radius in km
+
+    def __init__(self, add_distance=True):
+        self.add_distance = add_distance
+
+    def fit(self, X, y=None):
+        return self
+
+    def haversine_np(self, lon1, lat1, lon2, lat2):
+        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+
+        a = np.sin(dlat/2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2.0)**2
+
+        c = 2 * np.arcsin(np.sqrt(a))
+        km = self.EARTH_RADIUS * c
+
+        return km
+
+    def transform(self, X):
+        if self.add_distance:
+            distance = self.haversine_np(
+                X['dropoff_longitude'],
+                X['dropoff_latitude'],
+                X['pickup_longitude'],
+                X['pickup_latitude']
+            )
+            X['distance'] = distance
+        return X
+
+time_attrs = [
+    'pickup_datetime',
+    'dropoff_datetime',
+]
+
+attrs = [
+    'pickup_datetime',
+    'dropoff_datetime',
+    'passenger_count',
+    'pickup_longitude',
+    'pickup_latitude',
+    'dropoff_longitude',
+    'dropoff_latitude',
+]
+
+pipeline = Pipeline([
+    ('dist_adder', DistanceAdder()),
+    ('datetime_to_timestamp', DateTimeToTimeStampTransformer(time_attrs)),
+    ('selector', DataFrameSelector(attrs)),
+    ('std_scaler', StandardScaler()),
+])
