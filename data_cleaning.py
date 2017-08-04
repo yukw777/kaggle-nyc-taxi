@@ -1,9 +1,8 @@
 import numpy as np
-import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+
 
 class DataFrameSelector(BaseEstimator, TransformerMixin):
 
@@ -15,6 +14,7 @@ class DataFrameSelector(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         return X[self.attribute_names].values
+
 
 class DateTimeToTimeStampTransformer(BaseEstimator, TransformerMixin):
 
@@ -30,6 +30,7 @@ class DateTimeToTimeStampTransformer(BaseEstimator, TransformerMixin):
             X[attr] = self.helper(X[attr].dt.to_pydatetime())
 
         return X
+
 
 class DistanceAdder(BaseEstimator, TransformerMixin):
 
@@ -47,7 +48,8 @@ class DistanceAdder(BaseEstimator, TransformerMixin):
         dlon = lon2 - lon1
         dlat = lat2 - lat1
 
-        a = np.sin(dlat/2.0)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2.0)**2
+        a = np.sin(dlat/2.0)**2 + np.cos(lat1) \
+            * np.cos(lat2) * np.sin(dlon/2.0)**2
 
         c = 2 * np.arcsin(np.sqrt(a))
         km = self.EARTH_RADIUS * c
@@ -64,6 +66,7 @@ class DistanceAdder(BaseEstimator, TransformerMixin):
             )
             X['distance'] = distance
         return X
+
 
 time_attrs = [
     'pickup_datetime',
