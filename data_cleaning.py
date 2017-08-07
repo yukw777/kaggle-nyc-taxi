@@ -68,25 +68,29 @@ class DistanceAdder(BaseEstimator, TransformerMixin):
         return X
 
 
-time_attrs = [
-    'pickup_datetime',
-    'dropoff_datetime',
-]
+class DataCleaner():
 
-attrs = [
-    'pickup_datetime',
-    'dropoff_datetime',
-    'passenger_count',
-    'pickup_longitude',
-    'pickup_latitude',
-    'dropoff_longitude',
-    'dropoff_latitude',
-    'distance',
-]
+    def __init__(self):
+        self.time_attrs = [
+            'pickup_datetime',
+            'dropoff_datetime',
+        ]
 
-pipeline = Pipeline([
-    ('dist_adder', DistanceAdder()),
-    ('datetime_to_timestamp', DateTimeToTimeStampTransformer(time_attrs)),
-    ('selector', DataFrameSelector(attrs)),
-    ('std_scaler', StandardScaler()),
-])
+        self.attrs = [
+            'pickup_datetime',
+            'dropoff_datetime',
+            'passenger_count',
+            'pickup_longitude',
+            'pickup_latitude',
+            'dropoff_longitude',
+            'dropoff_latitude',
+            'distance',
+        ]
+
+        self.pipeline = Pipeline([
+            ('dist_adder', DistanceAdder()),
+            ('datetime_to_timestamp',
+                DateTimeToTimeStampTransformer(self.time_attrs)),
+            ('selector', DataFrameSelector(self.attrs)),
+            ('std_scaler', StandardScaler()),
+        ])
