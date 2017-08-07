@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -94,3 +95,24 @@ class DataCleaner():
             ('selector', DataFrameSelector(self.attrs)),
             ('std_scaler', StandardScaler()),
         ])
+
+    def clean(self, data_path):
+        raw_data = pd.read_csv(data_path, parse_dates=self.time_attrs)
+        return self.pipeline.fit_transform(raw_data)
+
+    def pickle(self, data_to_pickle, pickle_path):
+        np.save(pickle_path, data_to_pickle)
+
+    def clean_and_pickle(self, data_path, pickle_path):
+        cleaned_data = self.clean(data_path)
+        self.pickle(cleaned_data, pickle_path)
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('data_file_to_clean')
+    parser.add_argument('pickle_file')
+    args = parser.parse_args()
+    dc = DataCleaner()
+    dc.clean_and_pickle(args.data_file_to_clean, args.pickle_file)
