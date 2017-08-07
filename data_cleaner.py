@@ -88,6 +88,8 @@ class DataCleaner():
             'distance',
         ]
 
+        self.label_attr = 'trip_duration'
+
         self.pipeline = Pipeline([
             ('dist_adder', DistanceAdder()),
             ('datetime_to_timestamp',
@@ -107,12 +109,19 @@ class DataCleaner():
         cleaned_data = self.clean(data_path)
         self.pickle(cleaned_data, pickle_path)
 
+    def label_clean_and_pickle(self, data_path, pickle_path):
+        raw_data = pd.read_csv(data_path, parse_dates=self.time_attrs)
+        self.pickle(raw_data[self.label_attr], pickle_path)
+
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('data_file_to_clean')
-    parser.add_argument('pickle_file')
+    parser.add_argument('train_pickle_file')
+    parser.add_argument('label_pickle_file')
     args = parser.parse_args()
+
     dc = DataCleaner()
-    dc.clean_and_pickle(args.data_file_to_clean, args.pickle_file)
+    dc.clean_and_pickle(args.data_file_to_clean, args.train_pickle_file)
+    dc.label_clean_and_pickle(args.data_file_to_clean, args.label_pickle_file)
