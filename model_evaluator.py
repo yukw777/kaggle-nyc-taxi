@@ -20,9 +20,9 @@ class ModelEvaluator():
     def grid_search(self, param_grid,
                     scoring='neg_mean_squared_error', **kwargs):
         m = self.model(**self.default_model_params)
-        self.grid_search = GridSearchCV(
+        self.grid_search_cv = GridSearchCV(
             m, param_grid, scoring=scoring, **kwargs)
-        self.grid_search.fit(self.train, self.label)
+        self.grid_search_cv.fit(self.train, self.label)
 
     def display_rmse_scores(self):
         print("Scores:", self.rmse_scores)
