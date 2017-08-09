@@ -1,6 +1,6 @@
 import numpy as np
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, cross_val_score
+from sklearn.metrics import mean_squared_error
 
 
 class ModelEvaluator():
@@ -23,6 +23,17 @@ class ModelEvaluator():
         self.grid_search_cv = GridSearchCV(
             m, param_grid, scoring=scoring, **kwargs)
         self.grid_search_cv.fit(self.train, self.label)
+
+    def evaluate_best_estimator(self, train, label):
+        predictions = self.grid_search_cv.best_estimator_.predict(train)
+        self.mse = mean_squared_error(label, predictions)
+        self.rmse = np.sqrt(self.mse)
+        self.rmsle = np.log(self.rmse)
+
+    def display_best_estimator_eval_errors(self):
+        print("MSE:", self.mse)
+        print("RMSE:", self.rmse)
+        print("RMSLE:", self.rmsle)
 
     def display_rmse_scores(self):
         print("Scores:", self.rmse_scores)
