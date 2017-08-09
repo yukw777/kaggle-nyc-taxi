@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.metrics import mean_squared_error
+from sklearn.externals import joblib
 
 
 class ModelEvaluator():
@@ -34,6 +35,9 @@ class ModelEvaluator():
         print("MSE:", self.mse)
         print("RMSE:", self.rmse)
         print("RMSLE:", self.rmsle)
+
+    def save_best_estimator(self, name):
+        joblib.dump(self.grid_search_cv.best_estimator_, name)
 
     def display_rmse_scores(self):
         print("Scores:", self.rmse_scores)
