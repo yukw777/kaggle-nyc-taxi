@@ -1,5 +1,9 @@
 import numpy as np
-from sklearn.model_selection import GridSearchCV, cross_val_score
+from sklearn.model_selection import (
+    GridSearchCV,
+    RandomizedSearchCV,
+    cross_val_score,
+)
 from sklearn.metrics import mean_squared_error
 from sklearn.externals import joblib
 
@@ -18,15 +22,21 @@ class ModelEvaluator():
             m, self.train, y=self.label, scoring=scoring, **kwargs)
         self.rmse_scores = np.sqrt(-self.scores)
 
-    def grid_search(self, param_grid,
-                    scoring='neg_mean_squared_error', **kwargs):
+    def perform_search(self, search_method, param_grid,
+                       scoring='neg_mean_squared_error', **kwargs):
         m = self.model(**self.default_model_params)
-        self.grid_search_cv = GridSearchCV(
+        self.search_cv = search_method(
             m, param_grid, scoring=scoring, **kwargs)
-        self.grid_search_cv.fit(self.train, self.label)
+        self.search_cv.fit(self.train, self.label)
+
+    def grid_search(self, *args, **kwargs):
+        self.perform_search(GridSearchCV, *args, **kwargs)
+
+    def random_search(self, *args, **kwargs):
+        self.perform_search(RandomizedSearchCV, *args, **kwargs)
 
     def evaluate_best_estimator(self, train, label):
-        predictions = self.grid_search_cv.best_estimator_.predict(train)
+        predictions = self.search_cv.best_estimator_.predict(train)
         self.mse = mean_squared_error(label, predictions)
         self.rmse = np.sqrt(self.mse)
         self.rmsle = np.log(self.rmse)
@@ -37,7 +47,7 @@ class ModelEvaluator():
         print("RMSLE:", self.rmsle)
 
     def save_best_estimator(self, name):
-        joblib.dump(self.grid_search_cv.best_estimator_, name)
+        joblib.dump(self.search_cv.best_estimator_, name)
 
     def display_rmse_scores(self):
         print("Scores:", self.rmse_scores)
