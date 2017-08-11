@@ -14,6 +14,12 @@ class PickupDatetimeFeatures(BaseEstimator, TransformerMixin):
         prefix = 'pickup_'
         pickup_datetime = prefix + 'datetime'
         X[prefix + 'weekday'] = X[pickup_datetime].dt.weekday
+        X[prefix + 'hour_weekofyear'] = X['pickup_datetime'].dt.weekofyear
+        X[prefix + 'hour'] = X['pickup_datetime'].dt.hour
+        X[prefix + 'minute'] = X['pickup_datetime'].dt.minute
+        from_min = X['pickup_datetime'] - X['pickup_datetime'].min()
+        X[prefix + 'dt'] = (from_min).dt.total_seconds()
+        X[prefix + 'week_hour'] = X['pickup_weekday'] * 24 + X['pickup_hour']
         return X
 
 
