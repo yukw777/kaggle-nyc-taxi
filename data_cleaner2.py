@@ -4,6 +4,7 @@ import numpy as np
 from data_cleaner import DataCleaner
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
 
 
 class NoFitEstimator(BaseEstimator):
@@ -41,6 +42,30 @@ class LogTripDuration(NoFitEstimator, TransformerMixin):
         return X
 
 
+class PCACoords(BaseEstimator, TransformerMixin):
+
+    def fit(self, X, y=None):
+        coords = np.vstack((
+            X[['pickup_latitude', 'pickup_longitude']].values,
+            X[['dropoff_latitude', 'dropoff_longitude']].values
+        ))
+        self.pca = PCA().fit(coords)
+
+        return self
+
+    def transform(self, X):
+        pickup_pca_coords = self.pca.transform(
+            X[['pickup_latitude', 'pickup_longitude']])
+        X['pickup_pca0'] = pickup_pca_coords[:, 0]
+        X['pickup_pca1'] = pickup_pca_coords[:, 1]
+        dropoff_pca_coords = self.pca.transform(
+            X[['dropoff_latitude', 'dropoff_longitude']])
+        X['dropoff_pca0'] = dropoff_pca_coords[:, 0]
+        X['dropoff_pca1'] = dropoff_pca_coords[:, 1]
+
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -49,6 +74,7 @@ class DataCleaner2(DataCleaner):
             ('pickup_datetime_features', PickupDatetimeFeatures()),
             ('sf_flag_to_int', StoreAndFwdFlagToInt()),
             ('log_trip_duration', LogTripDuration()),
+            ('pca_features', PCACoords()),
         ])
 
 
