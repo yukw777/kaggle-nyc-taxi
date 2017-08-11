@@ -269,6 +269,21 @@ class CountFeatures(BaseEstimator, TransformerMixin):
         return X
 
 
+class FilterFeatures(NoFitEstimator, TransformerMixin):
+
+    def __init__(self):
+        self.do_not_use_for_training = [
+            'id', 'log_trip_duration', 'pickup_datetime', 'dropoff_datetime',
+            'trip_duration', 'pickup_date', 'avg_speed_h'
+        ]
+
+    def transform(self, X):
+        feature_names = [f for f in X.columns
+                         if f not in self.do_not_use_for_training]
+
+        return X[feature_names]
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -284,6 +299,7 @@ class DataCleaner2(DataCleaner):
             ('coord_kmeans', CoordKMeans()),
             ('geospatial_agg', GeospatialAggregate()),
             ('count_features', CountFeatures()),
+            ('filter_features', FilterFeatures()),
         ])
 
 
