@@ -164,8 +164,9 @@ class GeospatialAggregate(NoFitEstimator, TransformerMixin):
             gby = X.groupby(
                 gby_col).mean()[['avg_speed_h', 'log_trip_duration']]
             gby.columns = ['%s_gby_%s' % (col, gby_col) for col in gby.columns]
-            return pd.merge(
+            X = pd.merge(
                 X, gby, how='left', left_on=gby_col, right_index=True)
+        return X
 
     def mean_count_avg_speed(self, X):
         # mean average speed and counts over provided columns
@@ -188,7 +189,8 @@ class GeospatialAggregate(NoFitEstimator, TransformerMixin):
             col_names.append('avg_speed_h_%s' % '_'.join(gby_cols))
             col_names.append('cnt_%s' % '_'.join(gby_cols))
             coord_stats.columns = gby_cols + col_names
-            return pd.merge(X, coord_stats, how='left', on=gby_cols)
+            X = pd.merge(X, coord_stats, how='left', on=gby_cols)
+        return X
 
     def transform(self, X):
         # some round ups.. won't be used for training
