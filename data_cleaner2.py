@@ -1,14 +1,18 @@
 # import pandas as pd
+import numpy as np
 
 from data_cleaner import DataCleaner
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 
 
-class PickupDatetimeFeatures(BaseEstimator, TransformerMixin):
+class NoFitEstimator(BaseEstimator):
 
     def fit(self, X, y=None):
         return self
+
+
+class PickupDatetimeFeatures(NoFitEstimator, TransformerMixin):
 
     def transform(self, X):
         prefix = 'pickup_'
@@ -23,13 +27,17 @@ class PickupDatetimeFeatures(BaseEstimator, TransformerMixin):
         return X
 
 
-class StoreAndFwdFlagToInt(BaseEstimator, TransformerMixin):
-
-    def fit(self, X, y=None):
-        return self
+class StoreAndFwdFlagToInt(NoFitEstimator, TransformerMixin):
 
     def transform(self, X):
         X['store_and_fwd_flag'] = 1 * (X.store_and_fwd_flag.values == 'Y')
+        return X
+
+
+class LogTripDuration(NoFitEstimator, TransformerMixin):
+
+    def transform(self, X):
+        X['log_trip_duration'] = np.log(X.trip_duration.values + 1)
         return X
 
 
@@ -39,7 +47,8 @@ class DataCleaner2(DataCleaner):
         self.time_attrs = ['pickup_datetime']
         self.pipeline = Pipeline([
             ('pickup_datetime_features', PickupDatetimeFeatures()),
-            ('sf_flag_to_int', StoreAndFwdFlagToInt())
+            ('sf_flag_to_int', StoreAndFwdFlagToInt()),
+            ('log_trip_duration', LogTripDuration()),
         ])
 
 
