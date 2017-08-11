@@ -23,12 +23,23 @@ class PickupDatetimeFeatures(BaseEstimator, TransformerMixin):
         return X
 
 
+class StoreAndFwdFlagToInt(BaseEstimator, TransformerMixin):
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        X['store_and_fwd_flag'] = 1 * (X.store_and_fwd_flag.values == 'Y')
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
         self.time_attrs = ['pickup_datetime']
         self.pipeline = Pipeline([
-            ('pickup_datetime_features', PickupDatetimeFeatures())
+            ('pickup_datetime_features', PickupDatetimeFeatures()),
+            ('sf_flag_to_int', StoreAndFwdFlagToInt())
         ])
 
 
