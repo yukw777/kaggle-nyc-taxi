@@ -63,6 +63,12 @@ class PCACoords(BaseEstimator, TransformerMixin):
         X['dropoff_pca0'] = dropoff_pca_coords[:, 0]
         X['dropoff_pca1'] = dropoff_pca_coords[:, 1]
 
+        # Manhattan distances for PCA coordinates
+        # Proved to be useful
+        pca0_abs_diff = np.abs(X['dropoff_pca0'] - X['pickup_pca0'])
+        pca1_abs_diff = np.abs(X['dropoff_pca1'] - X['pickup_pca1'])
+        X['pca_manhattan'] = pca0_abs_diff + pca1_abs_diff
+
         return X
 
 
