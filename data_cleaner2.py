@@ -202,6 +202,13 @@ class GeospatialAggregate(NoFitEstimator, TransformerMixin):
         X = self.mean_avg_speed_log_trip_duration(X)
         X = self.mean_count_avg_speed(X)
 
+        X.drop('pickup_lat_bin', axis=1, inplace=True)
+        X.drop('pickup_long_bin', axis=1, inplace=True)
+        X.drop('center_lat_bin', axis=1, inplace=True)
+        X.drop('center_long_bin', axis=1, inplace=True)
+        X.drop('pickup_dt_bin', axis=1, inplace=True)
+        X.drop('avg_speed_h', axis=1, inplace=True)
+
         return X
 
 
