@@ -5,6 +5,7 @@ from data_cleaner import DataCleaner
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 from sklearn.decomposition import PCA
+from sklearn.cluster import MiniBatchKMeans
 
 
 class NoFitEstimator(BaseEstimator):
@@ -131,6 +132,26 @@ class CenterCoords(NoFitEstimator, TransformerMixin):
         return X
 
 
+class CoordKMeans(BaseEstimator, TransformerMixin):
+
+    def fit(self, X, y=None):
+        coords = np.vstack((
+            X[['pickup_latitude', 'pickup_longitude']].values,
+            X[['dropoff_latitude', 'dropoff_longitude']].values
+        ))
+        self.kmeans = MiniBatchKMeans(
+            n_clusters=100, batch_size=10000).fit(coords)
+
+        return self
+
+    def transform(self, X):
+        X['pickup_cluster'] = self.kmeans.predict(
+            X[['pickup_latitude', 'pickup_longitude']])
+        X['dropoff_cluster'] = self.kmeans.predict(
+            X[['dropoff_latitude', 'dropoff_longitude']])
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -143,6 +164,7 @@ class DataCleaner2(DataCleaner):
             ('haversine_distance', HaversineDistance()),
             ('direction', Direction()),
             ('center_coords', CenterCoords()),
+            ('coord_kmeans', CoordKMeans()),
         ])
 
 
