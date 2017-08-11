@@ -101,6 +101,26 @@ class HaversineDistance(NoFitEstimator, TransformerMixin):
         return X
 
 
+class Direction(NoFitEstimator, TransformerMixin):
+
+    def bearing_array(self, lat1, lng1, lat2, lng2):
+        lng_delta_rad = np.radians(lng2 - lng1)
+        lat1, lng1, lat2, lng2 = map(np.radians, (lat1, lng1, lat2, lng2))
+        y = np.sin(lng_delta_rad) * np.cos(lat2)
+        x = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) \
+            * np.cos(lng_delta_rad)
+        return np.degrees(np.arctan2(y, x))
+
+    def transform(self, X):
+        X['direction'] = self.bearing_array(
+            X['pickup_latitude'].values,
+            X['pickup_longitude'].values,
+            X['dropoff_latitude'].values,
+            X['dropoff_longitude'].values
+        )
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -111,6 +131,7 @@ class DataCleaner2(DataCleaner):
             ('log_trip_duration', LogTripDuration()),
             ('pca_features', PCACoords()),
             ('haversine_distance', HaversineDistance()),
+            ('direction', Direction()),
         ])
 
 
