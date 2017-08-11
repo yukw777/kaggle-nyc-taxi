@@ -72,6 +72,35 @@ class PCACoords(BaseEstimator, TransformerMixin):
         return X
 
 
+class HaversineDistance(NoFitEstimator, TransformerMixin):
+
+    EARTH_RADIUS = 6371     # Earth radius in km
+
+    def haversine_np(self, lon1, lat1, lon2, lat2):
+        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+
+        a = np.sin(dlat/2.0)**2 + np.cos(lat1) \
+            * np.cos(lat2) * np.sin(dlon/2.0)**2
+
+        c = 2 * np.arcsin(np.sqrt(a))
+        km = self.EARTH_RADIUS * c
+
+        return km
+
+    def transform(self, X):
+        distance = self.haversine_np(
+            X['dropoff_longitude'],
+            X['dropoff_latitude'],
+            X['pickup_longitude'],
+            X['pickup_latitude']
+        )
+        X['distance_haversine'] = distance
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -81,6 +110,7 @@ class DataCleaner2(DataCleaner):
             ('sf_flag_to_int', StoreAndFwdFlagToInt()),
             ('log_trip_duration', LogTripDuration()),
             ('pca_features', PCACoords()),
+            ('haversine_distance', HaversineDistance()),
         ])
 
 
