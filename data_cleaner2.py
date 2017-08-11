@@ -1,4 +1,4 @@
-# import pandas as pd
+import pandas as pd
 import numpy as np
 
 from data_cleaner import DataCleaner
@@ -19,11 +19,12 @@ class PickupDatetimeFeatures(NoFitEstimator, TransformerMixin):
     def transform(self, X):
         prefix = 'pickup_'
         pickup_datetime = prefix + 'datetime'
+        X[prefix + 'date'] = X[pickup_datetime].dt.date
         X[prefix + 'weekday'] = X[pickup_datetime].dt.weekday
-        X[prefix + 'hour_weekofyear'] = X['pickup_datetime'].dt.weekofyear
-        X[prefix + 'hour'] = X['pickup_datetime'].dt.hour
-        X[prefix + 'minute'] = X['pickup_datetime'].dt.minute
-        from_min = X['pickup_datetime'] - X['pickup_datetime'].min()
+        X[prefix + 'hour_weekofyear'] = X[pickup_datetime].dt.weekofyear
+        X[prefix + 'hour'] = X[pickup_datetime].dt.hour
+        X[prefix + 'minute'] = X[pickup_datetime].dt.minute
+        from_min = X[pickup_datetime] - X[pickup_datetime].min()
         X[prefix + 'dt'] = (from_min).dt.total_seconds()
         X[prefix + 'week_hour'] = X['pickup_weekday'] * 24 + X['pickup_hour']
         return X
@@ -152,6 +153,33 @@ class CoordKMeans(BaseEstimator, TransformerMixin):
         return X
 
 
+class GeospatialAggregate(NoFitEstimator, TransformerMixin):
+
+    def mean_avg_speed_log_trip_duration(self, X):
+        # the means of average_speed and log_trip_duration
+        # grouped by the given columns
+        for gby_col in ['pickup_hour', 'pickup_date', 'pickup_dt_bin',
+                        'pickup_week_hour', 'pickup_cluster',
+                        'dropoff_cluster']:
+            gby = X.groupby(
+                gby_col).mean()[['avg_speed_h', 'log_trip_duration']]
+            gby.columns = ['%s_gby_%s' % (col, gby_col) for col in gby.columns]
+            X = pd.merge(X, gby, how='left', left_on=gby_col, right_index=True)
+
+    def transform(self, X):
+        # some round ups.. won't be used for training
+        X['pickup_lat_bin'] = np.round(X['pickup_latitude'], 2)
+        X['pickup_long_bin'] = np.round(X['pickup_longitude'], 2)
+        X['center_lat_bin'] = np.round(X['center_latitude'], 2)
+        X['center_long_bin'] = np.round(X['center_longitude'], 2)
+        X['pickup_dt_bin'] = (X['pickup_dt'] // (3 * 3600))
+        X['avg_speed_h'] = 1000 * X['distance_haversine'] / X['trip_duration']
+
+        self.mean_avg_speed_log_trip_duration(X)
+
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -165,6 +193,7 @@ class DataCleaner2(DataCleaner):
             ('direction', Direction()),
             ('center_coords', CenterCoords()),
             ('coord_kmeans', CoordKMeans()),
+            ('geospatial_agg', GeospatialAggregate()),
         ])
 
 
