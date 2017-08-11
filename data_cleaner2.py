@@ -121,6 +121,16 @@ class Direction(NoFitEstimator, TransformerMixin):
         return X
 
 
+class CenterCoords(NoFitEstimator, TransformerMixin):
+
+    def transform(self, X):
+        X['center_latitude'] = (X['pickup_latitude'].values
+                                + X['dropoff_latitude'].values) / 2
+        X['center_longitude'] = (X['pickup_longitude'].values
+                                 + X['dropoff_longitude'].values) / 2
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -132,6 +142,7 @@ class DataCleaner2(DataCleaner):
             ('pca_features', PCACoords()),
             ('haversine_distance', HaversineDistance()),
             ('direction', Direction()),
+            ('center_coords', CenterCoords()),
         ])
 
 
