@@ -212,6 +212,61 @@ class GeospatialAggregate(NoFitEstimator, TransformerMixin):
         return X
 
 
+class CountFeatures(BaseEstimator, TransformerMixin):
+
+    GROUP_FREQ = '60min'
+
+    def count_over_group_freq(self, X):
+        # Count trips over 60min
+        copy_counts = self.copy \
+            .set_index('pickup_datetime')[['id']].sort_index()
+        copy_counts['count_60min'] = copy_counts \
+            .isnull() \
+            .rolling(self.GROUP_FREQ).count()['id']
+        return X.merge(copy_counts, on='id', how='left')
+
+    def trip_count_between_clusters(self, X):
+        # Count how many trips are going to each cluster over time
+        dropoff_counts = self.copy \
+            .set_index('pickup_datetime') \
+            .groupby([pd.TimeGrouper(self.GROUP_FREQ), 'dropoff_cluster']) \
+            .agg({'id': 'count'}) \
+            .reset_index().set_index('pickup_datetime') \
+            .groupby('dropoff_cluster').rolling('240min').mean() \
+            .drop('dropoff_cluster', axis=1) \
+            .reset_index().set_index('pickup_datetime') \
+            .shift(freq='-120min').reset_index() \
+            .rename(columns={
+                'pickup_datetime': 'pickup_datetime_group',
+                'id': 'dropoff_cluster_count'})
+
+        return X[['pickup_datetime_group', 'dropoff_cluster']] \
+            .merge(
+                dropoff_counts,
+                on=['pickup_datetime_group', 'dropoff_cluster'],
+                how='left'
+            )['dropoff_cluster_count'].fillna(0)
+
+    def fit(self, X, y=None):
+        self.copy = X.filter(
+            ['id', 'pickup_datetime', 'pickup_cluster', 'dropoff_cluster'],
+            axis=1
+        )
+        return self
+
+    def transform(self, X):
+        # Count trips over 60min
+        X['pickup_datetime_group'] = X['pickup_datetime'] \
+            .dt.round(self.GROUP_FREQ)
+
+        X = self.count_over_group_freq(X)
+        X['dropoff_cluster_count'] = self.trip_count_between_clusters(X)
+
+        X.drop('pickup_datetime_group', axis=1, inplace=True)
+
+        return X
+
+
 class DataCleaner2(DataCleaner):
 
     def __init__(self):
@@ -226,6 +281,7 @@ class DataCleaner2(DataCleaner):
             ('center_coords', CenterCoords()),
             ('coord_kmeans', CoordKMeans()),
             ('geospatial_agg', GeospatialAggregate()),
+            ('count_features', CountFeatures()),
         ])
 
 
