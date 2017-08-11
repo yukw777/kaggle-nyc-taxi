@@ -164,7 +164,31 @@ class GeospatialAggregate(NoFitEstimator, TransformerMixin):
             gby = X.groupby(
                 gby_col).mean()[['avg_speed_h', 'log_trip_duration']]
             gby.columns = ['%s_gby_%s' % (col, gby_col) for col in gby.columns]
-            X = pd.merge(X, gby, how='left', left_on=gby_col, right_index=True)
+            return pd.merge(
+                X, gby, how='left', left_on=gby_col, right_index=True)
+
+    def mean_count_avg_speed(self, X):
+        # mean average speed and counts over provided columns
+        for gby_cols in [['center_lat_bin', 'center_long_bin'],
+                         ['pickup_hour', 'center_lat_bin', 'center_long_bin'],
+                         ['pickup_hour', 'pickup_cluster'],
+                         ['pickup_hour', 'dropoff_cluster'],
+                         ['pickup_cluster', 'dropoff_cluster']]:
+            coord_speed = X \
+                .groupby(gby_cols) \
+                .mean()[['avg_speed_h']] \
+                .reset_index()
+            coord_count = X \
+                .groupby(gby_cols) \
+                .count()[['id']] \
+                .reset_index()
+            coord_stats = pd.merge(coord_speed, coord_count, on=gby_cols)
+            coord_stats = coord_stats[coord_stats['id'] > 100]
+            col_names = []
+            col_names.append('avg_speed_h_%s' % '_'.join(gby_cols))
+            col_names.append('cnt_%s' % '_'.join(gby_cols))
+            coord_stats.columns = gby_cols + col_names
+            return pd.merge(X, coord_stats, how='left', on=gby_cols)
 
     def transform(self, X):
         # some round ups.. won't be used for training
@@ -175,7 +199,8 @@ class GeospatialAggregate(NoFitEstimator, TransformerMixin):
         X['pickup_dt_bin'] = (X['pickup_dt'] // (3 * 3600))
         X['avg_speed_h'] = 1000 * X['distance_haversine'] / X['trip_duration']
 
-        self.mean_avg_speed_log_trip_duration(X)
+        X = self.mean_avg_speed_log_trip_duration(X)
+        X = self.mean_count_avg_speed(X)
 
         return X
 
