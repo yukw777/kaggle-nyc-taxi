@@ -274,7 +274,7 @@ class FilterFeatures(NoFitEstimator, TransformerMixin):
     def __init__(self):
         self.do_not_use_for_training = [
             'id', 'log_trip_duration', 'pickup_datetime', 'dropoff_datetime',
-            'trip_duration', 'pickup_date', 'avg_speed_h'
+            'pickup_date', 'avg_speed_h'
         ]
 
     def transform(self, X):
